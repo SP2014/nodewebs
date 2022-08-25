@@ -2,8 +2,9 @@
   <head>
     <script>
       const img = document.querySelector('img');
-      let HOST = location.origin.replace(/^https/, 'wss/').replace(/\d{4}/,'65080')
-      console.log("IP "+ HOST)
+      // let HOST = location.origin.replace(/^https/, 'wss/').replace(/\d{4}/,'65080')
+      // console.log("IP "+ HOST)
+      const HOST = 'ws:///node-webs-test.herokuapp.com:65080'
       let ws = new WebSocket(HOST);
       let el;
 
