@@ -1,16 +1,25 @@
 <html>
   <head>
     <script>
-      let HOST = location.origin.replace(/^http/, 'ws')
+      const img = document.querySelector('img');
+      let HOST = location.origin.replace(/^http/, 'ws').replace(/\d{4}/,'65080')
+      console.log("IP "+ HOST)
       let ws = new WebSocket(HOST);
       let el;
 
-      ws.onmessage = (event) => {
-        el = document.getElementById('server-time');
-        el.innerHTML = 'Server time: ' + event.data;
+      ws.onmessage = message => {
+         const arrayBuffer = message.data;
+          if(el)
+          {
+            URL.revokeObjectURL(el);
+          }
+          el = URL.createObjectURL(new Blob([arrayBuffer]));      
+        img.src = el;
       };
     </script>
   </head>
   <body>
     <p id="server-time"></p>
-  </bod
+    <img src="">
+  </body>
+</html>  
