@@ -1,24 +1,91 @@
 'use strict';
 
 const express = require('express');
-const { Server } = require('ws');
+const app = express();
+const server = require('http').Server(app);
+const url = require('url');
 
-const PORT = process.env.PORT || 3000;
-const INDEX = '/index.html';
+const WebSocket = require('ws');
+
+const port = process.env.PORT || 3000;
+
+const express_config= require('./config/express.js');
+
+express_config.init(app);
+
+const wss1 = new WebSocket.Server({ noServer: true });
+const wss2 = new WebSocket.Server({ noServer: true });
 
 
-const server = express().use((req, res) =>res.sendFile(INDEX, { root: __dirname }))
-                        .listen(PORT, () => console.log(`Listening on ${PORT}`));
-const wss = new Server({server},() => console.log(`WS Server is up`));
 
-wss.on('connection', (ws) => {
-  console.log('Client connected');
-  ws.on('message', data => {
-  	wss.clients.forEach((client) => {
-  		//if(client.readyState === ws.OPEN){
-  			client.send(data);
-  		//}
-  	})
+var cameraArray={};
+
+//esp32cam websocket
+wss1.on('connection', function connection(ws) {
+  ws.on('message', function incoming(message) {
+    wss2.clients.forEach(function each(client) {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(message);
+      }
+    });
   });
-  ws.on('close', () => console.log('Client disconnected'));
 });
+
+//webbrowser websocket
+wss2.on('connection', function connection(ws) {
+  ws.on('message', function incoming(message) {
+    // nothing here should be received
+    console.log('received wss2: %s', message);
+  });
+});
+
+server.on('upgrade', function upgrade(request, socket, head) {
+  const pathname = url.parse(request.url).pathname;
+
+  if (pathname === '/jpgstream_server') {
+    wss1.handleUpgrade(request, socket, head, function done(ws) {
+      wss1.emit('connection', ws, request);
+    });
+  } else if (pathname === '/jpgstream_client') {
+    wss2.handleUpgrade(request, socket, head, function done(ws) {
+      wss2.emit('connection', ws, request);
+    });
+  } else {
+    socket.destroy();
+  }
+});
+
+
+app.get('/', (req, res) => {
+    res.render('index', {});
+});
+
+
+server.listen(port, () => {
+    console.log(`App listening at http://localhost:${port}`)
+})
+
+
+
+// const express = require('express');
+// const { Server } = require('ws');
+
+// const PORT = process.env.PORT || 3000;
+// const INDEX = '/index.html';
+
+
+// const server = express().use((req, res) =>res.sendFile(INDEX, { root: __dirname }))
+//                         .listen(PORT, () => console.log(`Listening on ${PORT}`));
+// const wss = new Server({server},() => console.log(`WS Server is up`));
+
+// wss.on('connection', (ws) => {
+//   console.log('Client connected');
+//   ws.on('message', data => {
+//   	wss.clients.forEach((client) => {
+//   		//if(client.readyState === ws.OPEN){
+//   			client.send(data);
+//   		//}
+//   	})
+//   });
+//   ws.on('close', () => console.log('Client disconnected'));
+// });
