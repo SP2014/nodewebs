@@ -16,12 +16,28 @@ express_config.init(app);
 const wss1 = new WebSocket.Server({ noServer: true });
 const wss2 = new WebSocket.Server({ noServer: true });
 
+var os = require( 'os' );
+var networkInterfaces = Object.values(os.networkInterfaces())
+    .reduce((r,a) => {
+        r = r.concat(a)
+        return r;
+    }, [])
+    .filter(({family, address}) => {
+        return family.toLowerCase().indexOf('v4') >= 0 &&
+            address !== '127.0.0.1'
+    })
+    .map(({address}) => address);
+var ipAddresses = networkInterfaces.join(', ');
+
 
 
 var cameraArray={};
 
 //esp32cam websocket
 wss1.on('connection', function connection(ws) {
+
+  ws.on('error', console.error);
+
   ws.on('message', function incoming(message) {
     wss2.clients.forEach(function each(client) {
       if (client.readyState === WebSocket.OPEN) {
@@ -33,6 +49,8 @@ wss1.on('connection', function connection(ws) {
 
 //webbrowser websocket
 wss2.on('connection', function connection(ws) {
+  ws.on('error', console.error);
+  
   ws.on('message', function incoming(message) {
     // nothing here should be received
     console.log('received wss2: %s', message);
@@ -62,7 +80,7 @@ app.get('/', (req, res) => {
 
 
 server.listen(port, () => {
-    console.log(`App listening at http://localhost:${port}`)
+    console.log(`App listening at http://${ipAddresses}:${port}`)
 })
 
 
